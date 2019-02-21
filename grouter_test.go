@@ -10,12 +10,12 @@ import (
 var _ = Describe("grouter", func() {
 	var subject Router
 
-	BeforeEach(func() {
-		subject = NewRouter()
-	})
-
 	Describe("Add route", func() {
 		var err error
+
+		BeforeEach(func() {
+			subject = NewRouter()
+		})
 
 		// Add test for the root url (only host, without path)
 
@@ -62,7 +62,41 @@ var _ = Describe("grouter", func() {
 			Expect(err).To(BeNil())
 		})
 
-		// Add errors test
+		It("Should return error when two different varibles on same place", func() {
+			err = subject.AddRoute("https://api.github.com/applications/grants/:grant_id/no", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/grants/:other_id/no", 1)
+			Expect(err).ToNot(BeNil())
+		})
+
+		It("Should return error when variable conflicts with catchAll", func() {
+			err = subject.AddRoute("https://api.github.com/applications/grants/:grant_id/no", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/grants/*", 1)
+			Expect(err).ToNot(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/events/*", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/events/:event_id", 1)
+			Expect(err).ToNot(BeNil())
+		})
+
+		It("Should return error when catchAll variable conflicts with catchAll", func() {
+			err = subject.AddRoute("https://api.github.com/applications/grants/*path", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/grants/*", 1)
+			Expect(err).ToNot(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/events/*", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/applications/events/*path", 1)
+			Expect(err).ToNot(BeNil())
+		})
 	})
 
 	Describe("Lookup", func() {
@@ -70,6 +104,8 @@ var _ = Describe("grouter", func() {
 		var item *ParsedRoute
 
 		BeforeEach(func() {
+			subject = NewRouter()
+
 			subject.AddRoute("https://api.github.com/search/repositories", 1)
 
 			subject.AddRoute("https://api.github.com/users/:username/events", 2)
