@@ -36,19 +36,33 @@ var _ = Describe("grouter", func() {
 		})
 
 		It("Should add catch all url", func() {
-			err := subject.AddRoute("https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken/*", 1)
+			err = subject.AddRoute("https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken/*", 1)
 			Expect(err).To(BeNil())
 		})
 
 		It("Should add parameterized catch all url", func() {
-			err := subject.AddRoute("https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken/*some", 1)
+			err = subject.AddRoute("https://api.github.com/v1/authtoken/*some", 1)
 			Expect(err).To(BeNil())
 		})
 
-		XIt("Should add url with parameterized query", func() {
-			err := subject.AddRoute("https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken?user=:user_id", 1)
+		It("Should add url with parameterized query", func() {
+			err = subject.AddRoute("https://api.github.com/v1/authtoken?user=:user_id&api_key=*&format=json", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/v1/authtoken?user=:user_id&api_key=*&format=xml", 2)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/repos/*?format=json&token=*&id=:id", 3)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/repos/*?format=json&token=*", 4)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("https://api.github.com/repos/*?token=*&format=xml", 5)
 			Expect(err).To(BeNil())
 		})
+
+		// Add errors test
 	})
 
 	Describe("Lookup", func() {
@@ -63,6 +77,10 @@ var _ = Describe("grouter", func() {
 
 			subject.AddRoute("https://api.github.com/authorizations/clients/*client", 4)
 			subject.AddRoute("https://api.github.com/authorizations/events/*", 5)
+
+			subject.AddRoute("https://api.github.com/repos/*?format=json&token=*&id=:id", 6)
+			subject.AddRoute("https://api.github.com/repos/*?format=json&token=*", 7)
+			subject.AddRoute("https://api.github.com/repos/*?token=*&format=xml", 8)
 		})
 
 		It("Should find url by equality", func() {
@@ -87,7 +105,7 @@ var _ = Describe("grouter", func() {
 			Expect(item.UrlParams).To(BeEmpty())
 		})
 
-		It("Should find parameterized catch all", func() {
+		It("Should find parameterized catch all url", func() {
 			item, _ = subject.Lookup("https://api.github.com/authorizations/clients/client-1")
 
 			Expect(item.Value).To(Equal(4))
@@ -103,12 +121,26 @@ var _ = Describe("grouter", func() {
 			Expect(item.UrlParams).To(Equal(expected))
 		})
 
-		It("Should find catch all", func() {
+		It("Should find catch all url", func() {
 			item, _ = subject.Lookup("https://api.github.com/authorizations/events/1")
 			Expect(item.Value).To(Equal(5))
 
 			item, _ = subject.Lookup("https://api.github.com/authorizations/events/1/2/3")
 			Expect(item.Value).To(Equal(5))
+		})
+
+		It("Should find url with query", func() {
+			item, _ = subject.Lookup("https://api.github.com/repos/repo-1?format=json&token=123456&id=12")
+			Expect(item.Value).To(Equal(6))
+
+			item, _ = subject.Lookup("https://api.github.com/repos/repo-1/update?format=json&token=8797")
+			Expect(item.Value).To(Equal(7))
+
+			item, _ = subject.Lookup("https://api.github.com/repos/repo-2?format=xml&token=1234")
+			Expect(item.Value).To(Equal(8))
+
+			item, _ = subject.Lookup("https://api.github.com/repos/repo-2?format=xml&token=1234&xid=78")
+			Expect(item.Value).To(Equal(8))
 		})
 	})
 })

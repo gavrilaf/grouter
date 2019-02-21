@@ -63,7 +63,7 @@ func (self *router) AddRoute(url string, value interface{}) error {
 		current = newNode
 	}
 
-	current.setLeaf(u.Query(), value)
+	current.addLeaf(u.Query(), value)
 
 	return nil
 }
@@ -111,14 +111,17 @@ func (self *router) Lookup(url string) (*ParsedRoute, error) {
 		}
 	}
 
-	if current != nil && current.leaf != nil {
-		return &ParsedRoute{
-			Url:         url,
-			Pattern:     "",
-			UrlParams:   urlParams,
-			QueryParams: nil,
-			Value:       current.leaf.value,
-		}, nil
+	if current != nil {
+		leaf := current.matchLeaf(u.Query())
+		if leaf != nil {
+			return &ParsedRoute{
+				Url:         url,
+				Pattern:     "",
+				UrlParams:   urlParams,
+				QueryParams: leaf.queryParams,
+				Value:       leaf.value,
+			}, nil
+		}
 	}
 
 	return nil, nil
