@@ -120,8 +120,6 @@ func (self *node) addChild(name string) (*node, error) {
 }
 
 func (self *node) getChild(name string) *node {
-	//fmt.Printf("getChild: %v, %v\n", self, name)
-
 	child, ok := self.children[name]
 	if !ok {
 		return self.wildcardChild
@@ -131,7 +129,6 @@ func (self *node) getChild(name string) *node {
 }
 
 func (self *node) addLeaf(params url.Values, value interface{}) {
-	//fmt.Printf("Add leaf: %v, value: %v\n", params, value)
 	newLeaf := leafNode{
 		query: params,
 		value: value,
@@ -146,10 +143,8 @@ func (self *node) addLeaf(params url.Values, value interface{}) {
 }
 
 func (self *node) matchLeaf(params url.Values) *matchedLeaf {
-	//fmt.Printf("Match leaf\n")
 	for _, leaf := range self.leafs {
 		ok, parsedParams := leaf.matchQuery(params)
-		//fmt.Printf("Leaf %v, ok %v\n", leaf, ok)
 		if ok {
 			return &matchedLeaf{
 				queryParams: parsedParams,

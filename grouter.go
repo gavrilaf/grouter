@@ -15,38 +15,42 @@ type ParsedRoute struct {
 }
 
 type Router interface {
-	AddRoute(url string, value interface{}) error
-	Lookup(url string) (*ParsedRoute, error)
+	AddRoute(method string, url string, value interface{}) error
+	Lookup(method string, url string) (*ParsedRoute, error)
 }
 
 type router struct {
-	hosts map[string]*node
+	hosts map[string]map[string]*node
 }
 
 func NewRouter() Router {
-	return &router{hosts: make(map[string]*node)}
+	return &router{hosts: make(map[string]map[string]*node)}
 }
 
-func (self *router) AddRoute(url string, value interface{}) error {
+func (self *router) AddRoute(method string, url string, value interface{}) error {
+	method = strings.ToLower(method)
+	url = strings.ToLower(url)
+
 	u, err := Parse(url)
 	if err != nil {
 		return fmt.Errorf("Could not parse url %v, %v", url, err)
 	}
 
-	//fmt.Printf("Add route - parsed url: %v, %v, %v\n", u.Hostname(), u.Path, u.Query())
-
-	var root *node
-	root, ok := self.hosts[u.Hostname()]
+	host, ok := self.hosts[u.Hostname()]
 	if !ok {
-		root = newRoot()
-		self.hosts[u.Hostname()] = root
+		host = make(map[string]*node)
+		self.hosts[u.Hostname()] = host
 	}
 
-	//fmt.Printf("Created root: %v\n", root)
+	root, ok := host[method]
+	if !ok {
+		root = newRoot()
+		host[method] = root
+	}
+
 	current := root
 
 	comps := strings.Split(u.Path, "/")
-	//fmt.Printf("Splitted components: %v\n", comps)
 	for i := 0; i < len(comps); i++ {
 		s := strings.TrimSpace(comps[i])
 		if len(s) == 0 {
@@ -57,9 +61,6 @@ func (self *router) AddRoute(url string, value interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Could not add url %v, %v", url, err)
 		}
-
-		//fmt.Printf("Add route - Current: %v, %v, %v\n", s, current, newNode)
-
 		current = newNode
 	}
 
@@ -68,15 +69,21 @@ func (self *router) AddRoute(url string, value interface{}) error {
 	return nil
 }
 
-func (self *router) Lookup(url string) (*ParsedRoute, error) {
+func (self *router) Lookup(method string, url string) (*ParsedRoute, error) {
+	method = strings.ToLower(method)
+	url = strings.ToLower(url)
+
 	u, err := Parse(url)
 	if err != nil {
 		return nil, fmt.Errorf("Could not parse url %v, %v", url, err)
 	}
 
-	//fmt.Printf("Lookup - Parsed url: %v, %v, %v\n", u.Hostname(), u.Path, u.Query())
+	host, ok := self.hosts[u.Hostname()]
+	if !ok {
+		return nil, nil
+	}
 
-	current, ok := self.hosts[u.Hostname()]
+	current, ok := host[method]
 	if !ok {
 		return nil, nil
 	}
@@ -84,7 +91,6 @@ func (self *router) Lookup(url string) (*ParsedRoute, error) {
 	urlParams := make(map[string]string)
 
 	comps := strings.Split(u.Path, "/")
-	//fmt.Printf("Lookup - Splitted components: %v\n", comps)
 	for i := 0; i < len(comps); i++ {
 		s := strings.TrimSpace(comps[i])
 		if len(s) == 0 {
@@ -92,7 +98,6 @@ func (self *router) Lookup(url string) (*ParsedRoute, error) {
 		}
 
 		current = current.getChild(s)
-		//fmt.Printf("Lookup - Current: %v, %v\n", s, current)
 		if current == nil {
 			return nil, nil
 		}
