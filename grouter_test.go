@@ -116,10 +116,17 @@ var _ = Describe("grouter", func() {
 			subject.AddRoute("GET", "https://api.github.com/repos/*?format=json&token=*&id=:id", 6)
 			subject.AddRoute("GET", "https://api.github.com/repos/*?format=json&token=:token", 7)
 			subject.AddRoute("GET", "https://api.github.com/repos/*?token=*&format=xml", 8)
+
+			subject.AddRoute("GET", "https://test.aaa.r53.google.net:443/secure.google.com/v1/authinit?format=json&apikey=*&code=*", 100)
 		})
 
 		It("Should find root url", func() {
 			item, _ = subject.Lookup("GET", "https://api.github.com/")
+			Expect(item.Value).To(Equal(10))
+		})
+
+		It("Should find root url with query", func() {
+			item, _ = subject.Lookup("GET", "https://api.github.com?query=123")
 			Expect(item.Value).To(Equal(10))
 		})
 
@@ -192,6 +199,11 @@ var _ = Describe("grouter", func() {
 			item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo-2?format=xml&token=1234&xid=78")
 			Expect(item.Value).To(Equal(8))
 			Expect(item.QueryParams).To(BeEmpty())
+		})
+
+		It("Should find complex url with query", func() {
+			item, _ = subject.Lookup("GET", "https://test.aaa.r53.google.net:443/secure.google.com/v1/authinit?format=json&apikey=GQZExhNLtY7e4kiFCuZAaw72rkSUcFuY&code=RMJKAZiOIfW8qWbRJlqYL-QoWcF4L8SMFXtlFtkavZU*")
+			Expect(item.Value).To(Equal(100))
 		})
 
 		It("Should not find url with unknown host", func() {
