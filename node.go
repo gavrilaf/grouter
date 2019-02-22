@@ -149,7 +149,7 @@ func (self *node) matchLeaf(params url.Values) *matchedLeaf {
 	//fmt.Printf("Match leaf\n")
 	for _, leaf := range self.leafs {
 		ok, parsedParams := leaf.matchQuery(params)
-		fmt.Printf("Leaf %v, ok %v\n", leaf, ok)
+		//fmt.Printf("Leaf %v, ok %v\n", leaf, ok)
 		if ok {
 			return &matchedLeaf{
 				queryParams: parsedParams,
