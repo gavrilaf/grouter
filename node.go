@@ -19,8 +19,9 @@ type matchedLeaf struct {
 }
 
 type leafNode struct {
-	query url.Values
-	value interface{}
+	query    url.Values
+	catchAll bool
+	value    interface{}
 }
 
 type node struct {
@@ -129,9 +130,15 @@ func (self *node) getChild(name string) *node {
 }
 
 func (self *node) addLeaf(params url.Values, value interface{}) {
+	_, catchAll := params["*"]
+	if catchAll {
+		delete(params, "*")
+	}
+
 	newLeaf := leafNode{
-		query: params,
-		value: value,
+		query:    params,
+		catchAll: catchAll,
+		value:    value,
 	}
 
 	if self.leafs == nil {
@@ -159,6 +166,10 @@ func (self *node) matchLeaf(params url.Values) *matchedLeaf {
 
 func (self *leafNode) matchQuery(params url.Values) (bool, map[string]string) {
 	queryVars := make(map[string]string)
+
+	if !self.catchAll && len(self.query) != len(params) {
+		return false, queryVars
+	}
 
 	for key, v := range self.query {
 		matchValue := strings.Join(v, ",")
