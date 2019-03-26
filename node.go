@@ -185,7 +185,7 @@ func (self *leafNode) matchQuery(params url.Values) (bool, map[string]string) {
 			continue
 		}
 
-		if matchValue[0:1] == ":" {
+		if len(matchValue) > 1 && matchValue[0:1] == ":" {
 			name := strings.TrimSpace(matchValue[1:])
 			if len(name) > 0 {
 				queryVars[name] = reqValue

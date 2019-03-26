@@ -258,6 +258,9 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://test.net/disco/breadcrumb/offers?orderby=Boosted&breadcrumb=Home/Men/All%20Men&category=mens-view-all&filterby=store%20eq%201", 102)
 				subject.AddRoute("GET", "https://test.net/disco/breadcrumb/offers?orderby=Boosted&breadcrumb=Home/Men/All%20Men&category=mens-view-all&filterby=searchcolorfacet%20eq%20'Black'", 103)
 				subject.AddRoute("GET", "https://test.net/disco/breadcrumb/offers?orderby=Boosted&breadcrumb=Home/Men/All%20Men&category=mens-view-all&filterby=searchcolorfacet%20eq%20'Black'%5Estore%20eq%201", 104)
+
+				// This url crashed router - fixed
+				subject.AddRoute("GET", "https://test.net/v1.2/styleservice/style/4618153/shippingdescription?format=json&apikey=*&postalcode=", 105)
 			})
 
 			It("Should match url with query", func() {
@@ -272,28 +275,10 @@ var _ = Describe("grouter", func() {
 
 				item, _ = subject.Lookup("GET", "https://test.net/disco/breadcrumb/offers?orderby=Boosted&breadcrumb=Home/Men/All%20Men&category=mens-view-all&filterby=searchcolorfacet%20eq%20'Black'%5Estore%20eq%201")
 				Expect(item.Value).To(Equal(104))
+
+				item, _ = subject.Lookup("GET", "https://test.net/v1.2/styleservice/style/4618153/shippingdescription?format=json&apikey=GQZExhNLtY7e4kiFCuZAaw72rkSUcFuY&postalcode=")
+				Expect(item.Value).To(Equal(105))
 			})
 		})
-
-		/*
-
-				subject.AddRoute("GET", "https://test.net:443/secure.google.com/v1/authinit?format=json&apikey=*&code=*", 100)
-
-
-			})
-
-
-
-			FIt("Should not find url with unknown query params", func() {
-				// https://api.github.com/repos/*?token=*&format=xml
-				//item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo1?&format=xml") // need token=* parameter
-				//Expect(item).To(BeNil())
-
-				item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo1?&format=text&token=1234") // should be format=xml or format=json
-				Expect(item).To(BeNil())
-
-				//item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo1?&format=xml&token=1234&auth=1") // contains unexpected auth=1
-				//Expect(item).To(BeNil())
-			})*/
 	})
 })
