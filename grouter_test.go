@@ -17,12 +17,20 @@ var _ = Describe("grouter", func() {
 			subject = NewRouter()
 		})
 
-		It("Should add simple url", func() {
+		It("should add simple url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
 			Expect(err).To(BeNil())
 		})
 
-		It("Should add parameterized url", func() {
+		It("should return an error when adding two identical URLs", func() {
+			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
+			Expect(err).To(BeNil())
+
+			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
+			Expect(err).To(Equal(ErrAlreadyAdded))
+		})
+
+		It("should add parameterized url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id", 1)
 			Expect(err).To(BeNil())
 
@@ -33,17 +41,17 @@ var _ = Describe("grouter", func() {
 			Expect(err).To(BeNil())
 		})
 
-		It("Should add catch all url", func() {
+		It("should add catch all url", func() {
 			err = subject.AddRoute("GET", "https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken/*", 1)
 			Expect(err).To(BeNil())
 		})
 
-		It("Should add parameterized catch all url", func() {
+		It("should add parameterized catch all url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/v1/authtoken/*some", 1)
 			Expect(err).To(BeNil())
 		})
 
-		It("Should add url with parameterized query", func() {
+		It("should add url with parameterized query", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/v1/authtoken?user=:user_id&api_key=*&format=json", 1)
 			Expect(err).To(BeNil())
 
@@ -60,7 +68,7 @@ var _ = Describe("grouter", func() {
 			Expect(err).To(BeNil())
 		})
 
-		It("Should return error when two different varibles on same place", func() {
+		It("should return error when two different varibles on same place", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id/no", 1)
 			Expect(err).To(BeNil())
 
@@ -68,7 +76,7 @@ var _ = Describe("grouter", func() {
 			Expect(err).ToNot(BeNil())
 		})
 
-		It("Should return error when variable conflicts with catchAll", func() {
+		It("should return error when variable conflicts with catchAll", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id/no", 1)
 			Expect(err).To(BeNil())
 
@@ -82,7 +90,7 @@ var _ = Describe("grouter", func() {
 			Expect(err).ToNot(BeNil())
 		})
 
-		It("Should return error when catchAll variable conflicts with catchAll", func() {
+		It("should return error when catchAll variable conflicts with catchAll", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/*path", 1)
 			Expect(err).To(BeNil())
 
@@ -109,7 +117,7 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://api.github.com", 10)
 			})
 
-			It("Should match root url", func() {
+			It("should match root url", func() {
 				item, _ = subject.Lookup("GET", "https://api.github.com/")
 				Expect(item.Value).To(Equal(10))
 			})
@@ -120,22 +128,27 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
 			})
 
-			It("Should match url by equality", func() {
+			It("should match url by equality", func() {
 				item, _ = subject.Lookup("get", "https://api.github.com/search/repositories")
 				Expect(item.Value).To(Equal(1))
 			})
 
-			It("Should not match url with unknown host", func() {
+			It("should match url with http schema (http & https are the same for router)", func() {
+				item, _ = subject.Lookup("get", "http://api.github.com/search/repositories")
+				Expect(item.Value).To(Equal(1))
+			})
+
+			It("should not match url with unknown host", func() {
 				item, _ = subject.Lookup("GET", "https://facebook.com/search/repositories")
 				Expect(item).To(BeNil())
 			})
 
-			It("Should not match url with unknown endpoint", func() {
+			It("should not match url with unknown endpoint", func() {
 				item, _ = subject.Lookup("GET", "https://api.github.com/update/repositories")
 				Expect(item).To(BeNil())
 			})
 
-			It("Should not match url with unknown method", func() {
+			It("should not match url with unknown method", func() {
 				item, _ = subject.Lookup("POST", "https://api.github.com/search/repositories")
 				Expect(item).To(BeNil())
 			})
@@ -147,7 +160,7 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("POST", "https://api.github.com/users/vasya/events", 3)
 			})
 
-			It("Should match url with wildcard", func() {
+			It("should match url with wildcard", func() {
 				item, _ = subject.Lookup("post", "https://api.github.com/users/john-doe/events")
 				Expect(item.Value).To(Equal(2))
 
@@ -169,7 +182,7 @@ var _ = Describe("grouter", func() {
 			})
 
 			// https://api.github.com/authorizations/events/*
-			It("Should match catch all wildcard", func() {
+			It("should match catch all wildcard", func() {
 				item, _ = subject.Lookup("GET", "https://api.github.com/authorizations/events/1")
 				Expect(item.Value).To(Equal(5))
 
@@ -178,7 +191,7 @@ var _ = Describe("grouter", func() {
 			})
 
 			// https://api.github.com/authorizations/clients/*client
-			It("Should match named catch all wildcard", func() {
+			It("should match named catch all wildcard", func() {
 				item, _ = subject.Lookup("PUT", "https://api.github.com/authorizations/clients/client-1")
 				expected := map[string]string{"client": "client-1"}
 
@@ -200,7 +213,7 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://api.github.com/repos/*?token=*&format=xml", 8)
 			})
 
-			It("Should match url with query", func() {
+			It("should match url with query", func() {
 				// https://api.github.com/repos/*?format=json&token=*&id=:id
 				item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo-1?format=json&token=123456&id=12")
 				expected := map[string]string{"id": "12"}
@@ -223,7 +236,7 @@ var _ = Describe("grouter", func() {
 
 			})
 
-			It("Should not match url with query", func() {
+			It("should not match url with query", func() {
 				// https://api.github.com/repos/*?format=json&token=*&id=:id; format=json & id=:id & token=* or format=xml & token=* (no id)
 				item, _ = subject.Lookup("GET", "https://api.github.com/repos/repo-2?format=xml&token=1234&id=78")
 				Expect(item).To(BeNil())
@@ -236,7 +249,7 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://test.net:443/secure.google.com/v1/authinit?format=json&*", 1)
 			})
 
-			It("Should match url with query", func() {
+			It("should match url with query", func() {
 				item, _ = subject.Lookup("GET", "https://test.net:443/secure.google.com/v1/authinit?format=json&token=12")
 				Expect(item.Value).To(Equal(1))
 
@@ -244,7 +257,7 @@ var _ = Describe("grouter", func() {
 				Expect(item.Value).To(Equal(1))
 			})
 
-			It("Should not match url with query", func() {
+			It("should not match url with query", func() {
 				item, _ = subject.Lookup("GET", "https://test.net:443/secure.google.com/v1/authinit?format=xml&token=12")
 				Expect(item).To(BeNil())
 
@@ -263,7 +276,7 @@ var _ = Describe("grouter", func() {
 				subject.AddRoute("GET", "https://test.net/v1.2/styleservice/style/4618153/shippingdescription?format=json&apikey=*&postalcode=", 105)
 			})
 
-			It("Should match url with query", func() {
+			It("should match url with query", func() {
 				item, _ = subject.Lookup("GET", "https://test.net/disco/breadcrumb/offers?orderby=Boosted&breadcrumb=Home/Men/All%20Men&category=mens-view-all")
 				Expect(item.Value).To(Equal(101))
 

@@ -48,7 +48,7 @@ func (self *node) addChild(name string) (*node, error) {
 	case ":":
 		name = strings.TrimSpace(name[1:])
 		if len(name) == 0 {
-			return nil, fmt.Errorf("Empty variable name")
+			return nil, fmt.Errorf("empty variable name")
 		}
 
 		wildcardChild := self.wildcardChild
@@ -56,7 +56,7 @@ func (self *node) addChild(name string) (*node, error) {
 			if wildcardChild.name == name {
 				return wildcardChild, nil
 			} else {
-				return nil, fmt.Errorf("Different variables on the same position: %v, %v", wildcardChild.name, name)
+				return nil, fmt.Errorf("different variables on the same position: %v, %v", wildcardChild.name, name)
 			}
 		}
 
@@ -74,7 +74,7 @@ func (self *node) addChild(name string) (*node, error) {
 				if self.wildcardChild.nodeType == nodeCatchAll {
 					return self.wildcardChild, nil
 				} else {
-					return nil, fmt.Errorf("Variable and catchAll conflict: %v", self.wildcardChild.name)
+					return nil, fmt.Errorf("variable and catchAll conflict: %v", self.wildcardChild.name)
 				}
 			}
 
@@ -87,7 +87,7 @@ func (self *node) addChild(name string) (*node, error) {
 				if self.wildcardChild.nodeType == nodeCatchVariable && self.wildcardChild.name == name {
 					return self.wildcardChild, nil
 				} else {
-					return nil, fmt.Errorf("CatchAll variables conflict: %v", self.wildcardChild.name)
+					return nil, fmt.Errorf("catchAll variables conflict: %v", self.wildcardChild.name)
 				}
 			}
 
@@ -129,10 +129,15 @@ func (self *node) getChild(name string) *node {
 	return child
 }
 
-func (self *node) addLeaf(params url.Values, value interface{}) {
+func (self *node) addLeaf(params url.Values, value interface{}) error {
 	_, catchAll := params["*"]
 	if catchAll {
 		delete(params, "*")
+	}
+
+	if self.matchLeaf(params) != nil {
+		fmt.Printf("already matched\n")
+		return ErrAlreadyAdded
 	}
 
 	newLeaf := leafNode{
@@ -147,6 +152,8 @@ func (self *node) addLeaf(params url.Values, value interface{}) {
 	} else {
 		self.leafs = append(self.leafs, newLeaf)
 	}
+
+	return nil
 }
 
 func (self *node) matchLeaf(params url.Values) *matchedLeaf {

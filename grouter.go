@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+var ErrAlreadyAdded = fmt.Errorf("route already added")
+
 type ParsedRoute struct {
 	Url         string
 	Pattern     string
@@ -33,7 +35,7 @@ func (self *router) AddRoute(method string, url string, value interface{}) error
 
 	u, err := Parse(url)
 	if err != nil {
-		return fmt.Errorf("Could not parse url %v, %v", url, err)
+		return fmt.Errorf("could not parse url %v, %v", url, err)
 	}
 
 	host, ok := self.hosts[u.Hostname()]
@@ -59,14 +61,12 @@ func (self *router) AddRoute(method string, url string, value interface{}) error
 
 		newNode, err := current.addChild(s)
 		if err != nil {
-			return fmt.Errorf("Could not add url %v, %v", url, err)
+			return fmt.Errorf("could not add url %v, %v", url, err)
 		}
 		current = newNode
 	}
 
-	current.addLeaf(u.Query(), value)
-
-	return nil
+	return current.addLeaf(u.Query(), value)
 }
 
 func (self *router) Lookup(method string, url string) (*ParsedRoute, error) {
@@ -75,7 +75,7 @@ func (self *router) Lookup(method string, url string) (*ParsedRoute, error) {
 
 	u, err := Parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse url %v, %v", url, err)
+		return nil, fmt.Errorf("could not parse url %v, %v", url, err)
 	}
 
 	host, ok := self.hosts[u.Hostname()]
