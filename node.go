@@ -136,7 +136,6 @@ func (self *node) addLeaf(params url.Values, value interface{}) error {
 	}
 
 	if self.matchLeaf(params) != nil {
-		fmt.Printf("already matched\n")
 		return ErrAlreadyAdded
 	}
 
