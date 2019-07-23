@@ -19,89 +19,91 @@ var _ = Describe("grouter", func() {
 
 		It("should add simple url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should return an error when adding two identical URLs", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
-			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 1)
+			// you couldn't add the same url
+			err = subject.AddRoute("GET", "https://api.github.com/search/repositories", 2)
 			Expect(err).To(Equal(ErrAlreadyAdded))
 		})
 
 		It("should add parameterized url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/users/:username/events", 2)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
-			err = subject.AddRoute("GET", "https://api.github.com/users/vasya/events", 2)
-			Expect(err).To(BeNil())
+			// parameterized pattern & concrete pattern :username <-> vasya. Concrete pattern has bigger priority
+			err = subject.AddRoute("GET", "https://api.github.com/users/vasya/events", 3)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should add catch all url", func() {
 			err = subject.AddRoute("GET", "https://aadhi.cma.r53.nordstrom.net:443/v1/authtoken/*", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should add parameterized catch all url", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/v1/authtoken/*some", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should add url with parameterized query", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/v1/authtoken?user=:user_id&api_key=*&format=json", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/v1/authtoken?user=:user_id&api_key=*&format=xml", 2)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/repos/*?format=json&token=*&id=:id", 3)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/repos/*?format=json&token=*", 4)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/repos/*?token=*&format=xml", 5)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should return error when two different varibles on same place", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id/no", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:other_id/no", 1)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 		})
 
 		It("should return error when variable conflicts with catchAll", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/:grant_id/no", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/*", 1)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/events/*", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/events/:event_id", 1)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 		})
 
 		It("should return error when catchAll variable conflicts with catchAll", func() {
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/*path", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/grants/*", 1)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/events/*", 1)
-			Expect(err).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 
 			err = subject.AddRoute("GET", "https://api.github.com/applications/events/*path", 1)
-			Expect(err).ToNot(BeNil())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
@@ -138,6 +140,11 @@ var _ = Describe("grouter", func() {
 				Expect(item.Value).To(Equal(1))
 			})
 
+			It("should match url with port (grouter ingores port)", func() {
+				item, _ = subject.Lookup("get", "https://api.github.com:443/search/repositories")
+				Expect(item.Value).To(Equal(1))
+			})
+
 			It("should not match url with unknown host", func() {
 				item, _ = subject.Lookup("GET", "https://facebook.com/search/repositories")
 				Expect(item).To(BeNil())
@@ -168,10 +175,9 @@ var _ = Describe("grouter", func() {
 				Expect(item.UrlParams).To(Equal(expected))
 			})
 
-			It("Direct url has priority on wildcard", func() {
+			It("should direct url has priority on wildcard", func() {
 				item, _ = subject.Lookup("POST", "https://api.github.com/users/vasya/events")
 				Expect(item.Value).To(Equal(3))
-				Expect(item.UrlParams).To(BeEmpty())
 			})
 		})
 
